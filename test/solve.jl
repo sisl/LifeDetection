@@ -23,9 +23,9 @@ config = YAML.load_file(config_file)
 
 # simulation flags
 WANDB = config["evaluations"]["wandb"]
-POLICY =  config["evaluations"]["policy"] # "CONOPS" "GREEDY" "SARSOP
+POLICY = config["evaluations"]["policy"] # "CONOPS" "GREEDY" "SARSOP
 # Thresholds for decision
-threshold_high =  config["evaluations"]["threshold_high"] #0.99999
+threshold_high = config["evaluations"]["threshold_high"] #0.99999
 threshold_low = config["evaluations"]["threshold_low"] #0.00001
 VERBOSE = config["evaluations"]["verbose"]
 POLICYLOAD = config["evaluations"]["policy_load"]
@@ -34,34 +34,34 @@ proj_name = config["evaluations"]["proj_name"]
 
 # Parameters to change for additional testing / off nominal testing
 ACC_RATE = config["scenario"]["acc_rate"]               # 270 μL per day
-SAMPLE_MAX_CHAMBER = config["scenario"]["sample_Max_Chamber"]  
-std_ACC_RATE = config["scenario"]["std_acc_rate"]        
+SAMPLE_MAX_CHAMBER = config["scenario"]["sample_Max_Chamber"]
+std_ACC_RATE = config["scenario"]["std_acc_rate"]
 
 params = config["parameters"]
 
 lambdas = params["lambda"]
 taus = params["tau"]
-gammas = params["gamma"] 
+gammas = params["gamma"]
 
 ##################### General Parameters for Instrument Sample Usage #############################
 
 NUM_INSTRUMENTS = 7 # One extra for accumulate, Wouldn't change unless you change Bayes Net and Action CPDS
 LIFE_STATES = 3
 
-HRMS = 1						#0 # 0.5e-6 # mL # organic compounds, just going to set to zero its too small
-SMS_1 = 5 						#400 # μL # 0.4 # mL # amino acid characerization
-SMS_2 = 1  						 #100 # μL # 0.1 mL # Lipid Characterization
+HRMS = 1#0 # 0.5e-6 # mL # organic compounds, just going to set to zero its too small
+SMS_1 = 5 #400 # μL # 0.4 # mL # amino acid characerization
+SMS_2 = 1   #100 # μL # 0.1 mL # Lipid Characterization
 SMS = SMS_1 + SMS_2
 
-μCE_LIF = 1                  	 #15 # μL #0.015 # mL # amino acid and lipid characterization
-ESA_1 = 1						#15 # μL #0.015  # mL # macronutrients
-ESA_2 = 1   					#75 # μL #0.075  # mL # micronutrients
-ESA_3 = 1						#15 # μL #0.015  # mL # macronutrients
+μCE_LIF = 1                   #15 # μL #0.015 # mL # amino acid and lipid characterization
+ESA_1 = 1#15 # μL #0.015  # mL # macronutrients
+ESA_2 = 1   #75 # μL #0.075  # mL # micronutrients
+ESA_3 = 1#15 # μL #0.015  # mL # macronutrients
 ESA = ESA_1 + ESA_2 + ESA_3
 
-microscope = 1					# μL # 0.001 # mL # polyelectrolyte
-nanopore = 89					#10000 # μL # 10  # mL cell like morphologies
-none = 0						#non-instrument actions
+microscope = 1# μL # 0.001 # mL # polyelectrolyte
+nanopore = 89#10000 # μL # 10  # mL cell like morphologies
+none = 0#non-instrument actions
 
 ##################### Mapping Instrument Actions to sample characteristics #####################
 
@@ -106,7 +106,7 @@ cd(work_dir) do
 
 		# Generate new POMDP for each change in parameters
 		pomdp = LifeDetectionPOMDP(
-			bn=bn, # inside /src/common/bayesnet_generation.jl
+			bn=bn, # inside /src/common/bayes_net_helpers.jl
 			λ=λ,
 			τ=τ,
 			ACTION_CPDS=ACTION_CPDS,

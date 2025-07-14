@@ -3,12 +3,12 @@
 # -------------------------------
 # Configuration Flags
 # -------------------------------
-PLOT_CPDS     = false
+PLOT_CPDS     = true
 PLOT_BN       = false
 DECISION_TREE = false
 
 ALPHA_VECTORS_HEATMAP = false
-PARETO_FRONTIER_SINGLE = true
+PARETO_FRONTIER_SINGLE = false
 PARETO_FRONTIER = false
 projname = "log_grace"
 
@@ -248,13 +248,11 @@ if PARETO_FRONTIER_SINGLE
 				end
 			end
 
-
 			average_tt[proj_idx] = temp_tt / count
 			average_tf[proj_idx] = temp_tf / count
 			average_ft[proj_idx] = temp_ft / count
 			average_ff[proj_idx] = temp_ff / count
 			acc_rate[proj_idx] = count_action7 / count
-
 
 		end
 	end
