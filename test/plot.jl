@@ -10,7 +10,7 @@ DECISION_TREE = false
 ALPHA_VECTORS_HEATMAP = false
 PARETO_FRONTIER_SINGLE = true
 PARETO_FRONTIER = false
-projname = "hailey_custom"
+projname = "log_grace"
 
 # -------------------------------
 # Package Setup

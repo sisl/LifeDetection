@@ -35,12 +35,13 @@ proj_name = config["evaluations"]["proj_name"]
 # Parameters to change for additional testing / off nominal testing
 ACC_RATE = config["scenario"]["acc_rate"]               # 270 μL per day
 SAMPLE_MAX_CHAMBER = config["scenario"]["sample_Max_Chamber"]  
+std_ACC_RATE = config["scenario"]["std_acc_rate"]        
 
 params = config["parameters"]
 
 lambdas = params["lambda"]
 taus = params["tau"]
-gammas = params["gamma"]
+gammas = params["gamma"] 
 
 ##################### General Parameters for Instrument Sample Usage #############################
 
@@ -115,7 +116,9 @@ cd(work_dir) do
 			life_states=LIFE_STATES,
 			ACC_RATE=ACC_RATE,
 			sample_use=[HRMS, SMS, μCE_LIF, ESA, microscope, nanopore, none],
-			discount=γ)
+			discount=γ,
+			MAX_PENALTY=10000,
+			std_fraction=std_ACC_RATE)
 
 		project_name = "$(proj_name)_lambda_$(pomdp.λ)_tau_$(pomdp.τ)_gamma_$(pomdp.discount)_sample_$(pomdp.sample_volume)"
 
@@ -154,18 +157,19 @@ cd(work_dir) do
 		elseif POLICY == "SARSOP"
 
 			# Running SARSOP
-			solver = SARSOPSolver(verbose=true, timeout=100)
+			solver = SARSOPSolver(verbose=true, timeout=200)
 			# @show_requirements POMDPs.solve(solver, pomdp)
 
 			if POLICYLOAD
 				policy = load_policy(pomdp, "policy.out")
 			else
+				pomdpx = POMDPFile(pomdp)
 				policy = solve(solver, pomdp)
 			end
 
 			if WANDB
-				Wandb.wandb.save("model.pomdpx")
-				Wandb.wandb.save("policy.out")
+				# Wandb.wandb.save("model.pomdpx")
+				# Wandb.wandb.save("policy.out")
 				sleep(1)
 				plot_alpha_dots(policy)
 				plot_alpha_action_heatmap(policy)

@@ -27,7 +27,6 @@ end
 
 
 function distObservations(actionCpds, lifeState, action, maxObs)
-
     posterior = infer(bn, actionCpds[action] ,evidence=(Assignment(:C0 => lifeState )))
 
     probs = Float64[]  # P(obs | l=1)

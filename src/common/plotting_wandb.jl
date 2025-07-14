@@ -69,8 +69,8 @@ function plot_alpha_action_heatmap(policy)
 	if !isdir("./figures")
 		mkpath("./figures")
 	end
-	savefig(p, "./figures/plot_alpha_action_heatmap.png")
 	display(p)
+	savefig(p, "./figures/plot_alpha_action_heatmap.png")
 	return p
 end
 
@@ -133,8 +133,8 @@ function plot_alpha_dots(policy)
 	if !isdir("./figures")
 		mkpath("./figures")
 	end
-	savefig(p, "./figures/plot_alpha_dots.png")
 	display(p)
+	savefig(p, "./figures/plot_alpha_dots.png")
 	return p
 
 end

@@ -121,19 +121,21 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 			# format action and observation names
 			action_name = a >= pomdp.inst+1 ? (a == pomdp.inst+1 ? "Declare Dead" : "Declare Life") : (a == pomdp.inst ? "Accumulate" : "Sensor $(a)")
 			accu, true_state = stateindex_to_state(s, pomdp.life_states)  # Save the current state before transitioning 
+			accu_2, true_state2 = stateindex_to_state(sp, pomdp.life_states)  # Save the current state before transitioning 
 
 			# Get belief in life at this state
 			s_check = s
-			if o != 0
-				if true_state == 1 && step > 1
-					s_check = s_check + 1
-				end
-				belief_life = pdf(b, s_check)
+			# if o != 0
+			if true_state == 1 #&& step > 1
+				s_check = s_check + 1
 			end
+			belief_life = pdf(b, s_check)
+			# end
 
 			if verbose
 				@printf("%3d  | %-12s | %.3f        | %d          |  %d         | %.2f         \n",
 					step, action_name, belief_life, true_state, accu, total_reward)
+				println(accu_2)
 			end
 			if wandb
 
@@ -155,7 +157,6 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 				)
 
 			end
-
 			b = update(updater, b, a, o)
 
 			# end

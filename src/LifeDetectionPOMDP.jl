@@ -13,7 +13,9 @@ struct LifeDetectionPOMDP <: POMDP{Int, Int, Int}  # POMDP{State, Action, Observ
 	ACC_RATE::Int64# Accumulation Rate
 	sample_use::Vector{Int64}# Sample used by each of the instruments
 	# k::Vector{Float64} 			# Cost of observations
-	discount::Float64# Discount factor
+	discount::Float64 # Discount factor
+	MAX_PENALTY::Int64 # Maximum penalty for doing infeasible Actions
+	std_fraction::Float64 # Std deviation fraction variability
 end
 
 
@@ -31,8 +33,10 @@ function LifeDetectionPOMDP(;
 	sample_use::Vector{Int64}=[1, 1, 1, 1, 1, 1, 1], # cost of observations
 	# k::Vector{Float64} = [HRMS*10e6, SMS*10e6, μCE_LI*10e6, ESA*10e6, microscope*10e6, nanopore*10e6], # cost of observations
 	discount::Float64=0.9,
+	MAX_PENALTY::Int64=10000,
+	std_fraction::Float64=0.25,
 )
-	return LifeDetectionPOMDP(bn, λ, τ, ACTION_CPDS, max_obs, inst, sample_volume, life_states, ACC_RATE, sample_use, discount)
+	return LifeDetectionPOMDP(bn, λ, τ, ACTION_CPDS, max_obs, inst, sample_volume, life_states, ACC_RATE, sample_use, discount,MAX_PENALTY,std_fraction)
 end
 
 # 1 -> dead
@@ -45,18 +49,24 @@ POMDPs.states(pomdp::LifeDetectionPOMDP) = 1:(pomdp.sample_volume*pomdp.life_sta
 POMDPs.actions(pomdp::LifeDetectionPOMDP) = [1:pomdp.inst..., pomdp.inst+1, pomdp.inst+2]
 
 # Extra observation at beginning which will be null observation
-POMDPs.observations(pomdp::LifeDetectionPOMDP) = 0:(pomdp.max_obs*(pomdp.sample_volume+1)) # pomdp.sample_volume*pomdp.life_states+pomdp.life_states+1 
+POMDPs.observations(pomdp::LifeDetectionPOMDP) = 1:((pomdp.max_obs)*(pomdp.sample_volume+1)) # pomdp.sample_volume*pomdp.life_states+pomdp.life_states+1 
 
 POMDPs.stateindex(pomdp::LifeDetectionPOMDP, s::Int)  = s
 POMDPs.actionindex(pomdp::LifeDetectionPOMDP, a::Int) = a
-POMDPs.obsindex(pomdp::LifeDetectionPOMDP, o::Int)    = o+1
+POMDPs.obsindex(pomdp::LifeDetectionPOMDP, o::Int)    = o
 
 
 # TODO: do we want to start with different states? With different accumulations? (YES)
 # state_to_stateindex(0, 1) # TODO: change in future, so it starts at any state
-POMDPs.initialstate(pomdp::LifeDetectionPOMDP) = initialstateSample(pomdp, rand(0:100)) 
+POMDPs.initialstate(pomdp::LifeDetectionPOMDP) = uniform_state_distribution(pomdp) #initialstateSample(pomdp, rand(0:100)) 
 # POMDPs.initialstate(pomdp::LifeDetectionPOMDP) = initialstateSample(pomdp, 0) # 50% chance of being alive or dead with no starting sample    
 
+function uniform_state_distribution(pomdp::LifeDetectionPOMDP)
+	states = [s for s in 1:(pomdp.sample_volume * pomdp.life_states)
+	          if !POMDPs.isterminal(pomdp, s)]
+	probs = fill(1.0 / length(states), length(states))
+	return SparseCat(states, probs)
+end
 function initialstateSample(pomdp::LifeDetectionPOMDP, sample_volume::Int)
 	# Sample the life state from BN prior
 	P_life = pomdp.bn.cpds[1].distributions[1].p[2]
@@ -86,12 +96,20 @@ function POMDPs.transition(pomdp::LifeDetectionPOMDP, s::Int, a::Int)
 
 	# Accumulation action → randomize life state (biotic or abiotic)
 	if a == pomdp.inst
-		sample_volume = min(sample_volume + pomdp.ACC_RATE, pomdp.sample_volume)
+		# Sample accumulation amount from a Gaussian centered at ACC_RATE
+		# μ = pomdp.ACC_RATE
+		# # Set standard deviation as a fraction of ACC_RATE (e.g., 1/4 or 1/5)
+		# σ = pomdp.ACC_RATE * pomdp.std_fraction
+		# acc_amount = round(Int, clamp(rand(Normal(μ, σ)), 0, pomdp.sample_volume))
+		# new_sample_volume = min(sample_volume + acc_amount, pomdp.sample_volume)
+
+
+		new_sample_volume = min(sample_volume + pomdp.ACC_RATE, pomdp.sample_volume)
 
 		# update life state randomly (based on BN prior)
 		P_life = pomdp.bn.cpds[1].distributions[1].p[2]
-		s1 = state_to_stateindex(sample_volume, 1)  # dead
-		s2 = state_to_stateindex(sample_volume, 2)  # alive
+		s1 = state_to_stateindex(new_sample_volume, 1)  # dead
+		s2 = state_to_stateindex(new_sample_volume, 2)  # alive
 		return SparseCat([s1, s2], [1 - P_life, P_life])
 	end
 
@@ -110,10 +128,21 @@ function POMDPs.observation(pomdp::LifeDetectionPOMDP, a::Int, sp::Int)
 	# terminal state
 	# declare alive/dead
 	# not using instrument
+
 	# TODO: sample volume is 0 ? (I dont think this worked - GK)
-	if POMDPs.isterminal(pomdp, sp) || a == pomdp.inst + 1 || a == pomdp.inst + 2 || a == pomdp.inst #|| sample_volume == 0
-		return Deterministic(0)
+	if POMDPs.isterminal(pomdp, sp) || a == pomdp.inst + 1 || a == pomdp.inst + 2 #|| sample_volume == 0
+		return Deterministic(1)#state_to_stateindex(sample_volume, life_state))
 	end
+
+	if a == pomdp.inst
+		obs_range = obs_sample_volume(sample_volume, pomdp.max_obs)
+		probs = fill(1.0 / length(obs_range), length(obs_range))  # Uniform over all obs in that volume range
+		return Deterministic(obs_range[1]) #SparseCat(obs_range, probs)
+		# probs = zeros(pomdp.max_obs+1)
+		# probs[end] = 1.0
+		# return SparseCat(obs_sample_volume(sample_volume, pomdp.max_obs+1),probs)	
+	end
+
 
 	return SparseCat(obs_sample_volume(sample_volume, pomdp.max_obs), distObservations(pomdp.ACTION_CPDS, life_state, a, pomdp.max_obs))
 end
@@ -162,7 +191,7 @@ function POMDPs.reward(pomdp::LifeDetectionPOMDP, s::Int, a::Int)
 	end
 
 	if sample_volume < pomdp.sample_use[a] # infeasible sample volume
-		return -10000
+		return -pomdp.MAX_PENALTY
 	end
 
 	# sensing cost scaled by volume used
