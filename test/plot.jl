@@ -36,31 +36,31 @@ end
 # Get PART_ID and NUM_PARTS
 # -------------------------------
 function get_part_info()
-    part_id_str = get(ENV, "PART_ID", get(ARGS, 1, nothing))
-    if part_id_str === nothing
-        error("Missing PART_ID. Set it via environment variable or pass as CLI argument 1.")
-    end
-    part_id = try
-        parse(Int, part_id_str)
-    catch
-        error("Invalid PART_ID. Must be an integer.")
-    end
+	part_id_str = get(ENV, "PART_ID", get(ARGS, 1, nothing))
+	if part_id_str === nothing
+		error("Missing PART_ID. Set it via environment variable or pass as CLI argument 1.")
+	end
+	part_id = try
+		parse(Int, part_id_str)
+	catch
+		error("Invalid PART_ID. Must be an integer.")
+	end
 
-    num_parts_str = get(ENV, "NUM_PARTS", get(ARGS, 2, nothing))
-    if num_parts_str === nothing
-        error("Missing NUM_PARTS. Set it via environment variable or pass as CLI argument 2.")
-    end
-    num_parts = try
-        parse(Int, num_parts_str)
-    catch
-        error("Invalid NUM_PARTS. Must be an integer.")
-    end
+	num_parts_str = get(ENV, "NUM_PARTS", get(ARGS, 2, nothing))
+	if num_parts_str === nothing
+		error("Missing NUM_PARTS. Set it via environment variable or pass as CLI argument 2.")
+	end
+	num_parts = try
+		parse(Int, num_parts_str)
+	catch
+		error("Invalid NUM_PARTS. Must be an integer.")
+	end
 
-    if part_id < 1 || part_id > num_parts
-        error("PART_ID must be between 1 and NUM_PARTS (got $part_id, expected 1-$num_parts)")
-    end
+	if part_id < 1 || part_id > num_parts
+		error("PART_ID must be between 1 and NUM_PARTS (got $part_id, expected 1-$num_parts)")
+	end
 
-    return part_id, num_parts
+	return part_id, num_parts
 end
 
 # -------------------------------
@@ -75,7 +75,7 @@ if PARETO_FRONTIER
 	mkpath(work_dir)
 
 	cd(work_dir) do
-			
+
 		entity = "sherpa-rpa"
 		# ignore = ["hailey_lambda_0.99_tau_0.05_gamma_0.9_sample_100",
 		#           "hailey_lambda_0.925_tau_0.5_gamma_0.9_sample_100"]
@@ -104,59 +104,59 @@ if PARETO_FRONTIER
 			proj_name = string(project.name)
 			# try
 
-				runs = api.runs("$entity/$proj_name")
-				count = 0
-				temp_tt = 0.0
-				temp_tf = 0.0
-				temp_ft = 0.0
-				temp_ff = 0.0
-				count_action7 = 0.0
+			runs = api.runs("$entity/$proj_name")
+			count = 0
+			temp_tt = 0.0
+			temp_tf = 0.0
+			temp_ft = 0.0
+			temp_ff = 0.0
+			count_action7 = 0.0
 
-				for run in runs
-					if string(run.state) == "finished"
-							for hist in run.history(pandas=false)
-								# println(hist["action"])
-								if 7 == parse(Int,string(hist["action"]))
-									count_action7 += 1
-								end
-							end
-							# println("Run $(run.name): action 7 occurred $count_action7 times")
-							
-						try
-							tt = parse(Int, string(run.summary["tt"]))
-							tf = parse(Int, string(run.summary["tf"]))
-							ft = parse(Int, string(run.summary["ft"]))
-							ff = parse(Int, string(run.summary["ff"]))
-
-							total_t = tt + tf
-							total_f = ft + ff
-
-							temp_tt += tt / total_t
-							temp_tf += tf / total_t
-							temp_ft += ft / total_f
-							temp_ff += ff / total_f
-
-							count += 1
-						catch
-							println("Skipping run with missing metrics in $proj_name")
+			for run in runs
+				if string(run.state) == "finished"
+					for hist in run.history(pandas=false)
+						# println(hist["action"])
+						if 7 == parse(Int, string(hist["action"]))
+							count_action7 += 1
 						end
 					end
-				end
+					# println("Run $(run.name): action 7 occurred $count_action7 times")
 
-				if count > 0
-					average_tt[i] = temp_tt / count
-					average_tf[i] = temp_tf / count
-					average_ft[i] = temp_ft / count
-					average_ff[i] = temp_ff / count
-					acc_rate[i] = count_action7 / count
-				else
-					errors[i] = "No valid runs found"
+					try
+						tt = parse(Int, string(run.summary["tt"]))
+						tf = parse(Int, string(run.summary["tf"]))
+						ft = parse(Int, string(run.summary["ft"]))
+						ff = parse(Int, string(run.summary["ff"]))
+
+						total_t = tt + tf
+						total_f = ft + ff
+
+						temp_tt += tt / total_t
+						temp_tf += tf / total_t
+						temp_ft += ft / total_f
+						temp_ff += ff / total_f
+
+						count += 1
+					catch
+						println("Skipping run with missing metrics in $proj_name")
+					end
 				end
-				println("average_tt: ", average_tt)
-				println("average_tf: ", average_tf)
-				println("average_ft: ", average_ft)
-				println("average_ff: ", average_ff)
-				println("acc_rate: ", acc_rate)
+			end
+
+			if count > 0
+				average_tt[i] = temp_tt / count
+				average_tf[i] = temp_tf / count
+				average_ft[i] = temp_ft / count
+				average_ff[i] = temp_ff / count
+				acc_rate[i] = count_action7 / count
+			else
+				errors[i] = "No valid runs found"
+			end
+			println("average_tt: ", average_tt)
+			println("average_tf: ", average_tf)
+			println("average_ft: ", average_ft)
+			println("average_ff: ", average_ff)
+			println("acc_rate: ", acc_rate)
 			# catch e
 			# 	errors[i] = "Error processing $proj_name: $e"
 			# end
@@ -177,7 +177,7 @@ if PARETO_FRONTIER
 			end
 		end
 		println("Saved part results to $output_file")
-		
+
 	end
 end
 
@@ -199,10 +199,10 @@ if PARETO_FRONTIER_SINGLE
 
 	pareto_count = count(project_count -> startswith(string(project_count.name), projname), project_counts)
 
-	average_tt = zeros(Float64,pareto_count)
-	average_ft = zeros(Float64,pareto_count)
-	average_tf = zeros(Float64,pareto_count)
-	average_ff = zeros(Float64,pareto_count)
+	average_tt = zeros(Float64, pareto_count)
+	average_ft = zeros(Float64, pareto_count)
+	average_tf = zeros(Float64, pareto_count)
+	average_ff = zeros(Float64, pareto_count)
 	acc_rate = zeros(Float64, pareto_count)
 
 
@@ -219,12 +219,12 @@ if PARETO_FRONTIER_SINGLE
 			temp_ff = 0.0
 			count_action7 = 0.0
 
-			for idx in range(1,length(runs_pareto)-1)
+			for idx in range(1, length(runs_pareto)-1)
 				if string(runs_pareto[idx].state) == "finished"
 					print(idx)
 					for hist in runs_pareto[idx].history(pandas=false)
 						# println(hist["action"])
-						if 7 == parse(Int,string(hist["action"]))
+						if 7 == parse(Int, string(hist["action"]))
 							count_action7 += 1
 						end
 					end
@@ -246,7 +246,7 @@ if PARETO_FRONTIER_SINGLE
 					# 	println("Run doesn't have the correct metrics / data")
 					# end
 				end
-			end 
+			end
 
 
 			average_tt[proj_idx] = temp_tt / count
@@ -265,7 +265,7 @@ if PARETO_FRONTIER_SINGLE
 		xlabel = "false negative: declared dead when life is true",
 		ylabel = "false positive: declared life when life is false",
 		# title = "Average TT vs Average TF",
-		label = "Projects"
+		label="Projects",
 	)
 	min_tf, min_idx = findmin(average_tf)
 	println("Project with smallest average_tf: ", all_filtered_projects[min_idx])
@@ -308,45 +308,52 @@ if PLOT_BN == true
 end
 
 if PLOT_CPDS == true
-    @eval begin
+	@eval begin
 		p = @pgf GroupPlot({
 			group_style = {group_size = "6 by 4", horizontal_sep = "2.5cm", vertical_sep = "2.5cm"},
-			width = "4cm",
-			height = "3cm",
+			width = "2.5cm",
+			height = "4cm",
 		})
 
 		# 1: P(life) prior figure
-		prior_plot = make_pgfplot(bn.cpds[bn.name_to_index[:C0]].distributions[1], raw"P($C_0$)")
+		prior_plot = make_pgfplot(bn.cpds[bn.name_to_index[:sL]].distributions[1], raw"P($s_L$)")
 		PGFPlotsX.pgfsave("figures/prior.png", prior_plot)
 
 		# 2: CPD figure
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C1]].distributions[1], raw"P($C_1$ | $C_0$=false)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C1]].distributions[2], raw"P($C_1$ | $C_0$=true)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C2]].distributions[1], raw"P($C_2$ | $C_0$=false)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C2]].distributions[2], raw"P($C_2$ | $C_0$=true)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C3]].distributions[1], raw"P($C_3$ | $C_0$=false)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C3]].distributions[2], raw"P($C_3$ | $C_0$=true)"))
 
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C4]].distributions[1], raw"P($C_4$ | $C_0$=false)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C4]].distributions[2], raw"P($C_4$ | $C_0$=true)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C5]].distributions[1], raw"P($C_5$ | $C_0$=false)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C5]].distributions[2], raw"P($C_5$ | $C_0$=true)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C6]].distributions[1], raw"P($C_6$ | $C_0$=false)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C6]].distributions[2], raw"P($C_6$ | $C_0$=true)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o1]].distributions[1], raw"P($o_1$ | $s_L$=false)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o1]].distributions[2], raw"P($o_1$ | $s_L$=true)"))
 
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C7]].distributions[1], raw"P($C_7$ | $C_2$=false)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C7]].distributions[2], raw"P($C_7$ | $C_2$=true)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C8]].distributions[1], raw"P($C_8$ | $C_4$=false, $C_5$=0)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C8]].distributions[23], raw"P($C_8$ | $C_4$=false, $C_5$=22)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C8]].distributions[24], raw"P($C_8$ | $C_4$=true, $C_5$=0)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C8]].distributions[46], raw"P($C_8$ | $C_4$=true, $C_5$=22)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o2]].distributions[1], raw"P($o_2$ | $s_L$=false)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o2]].distributions[2], raw"P($o_2$ | $s_L$=true)"))
 
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C9]].distributions[1], raw"P($C_9$ | $C_1$=false, $C_5$=0)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C9]].distributions[23], raw"P($C_9$ | $C_1$=false, $C_5$=22)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C9]].distributions[24], raw"P($C_9$ | $C_1$=true, $C_5$=0)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C9]].distributions[46], raw"P($C_9$ | $C_1$=true, $C_5$=22)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C10]].distributions[1], raw"P($C_{10}$ | $C_5$=0)"))
-		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:C10]].distributions[23], raw"P($C_{10}$ | $C_5$=22)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o3]].distributions[1], raw"P($o_3$ | $s_L$=false)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o3]].distributions[2], raw"P($o_3$ | $s_L$=true)"))
+
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o4]].distributions[1], raw"P($o_4$ | $s_L$=false)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o4]].distributions[2], raw"P($o_4$ | $s_L$=true)"))
+
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o5]].distributions[1], raw"P($o_5$ | $s_L$=false)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o5]].distributions[2], raw"P($o_5$ | $s_L$=true)"))
+
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o6]].distributions[1], raw"P($o_6$ | $s_L$=false)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o6]].distributions[2], raw"P($o_6$ | $s_L$=true)"))
+
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o7]].distributions[1], raw"P($o_7$ | $o_2$=false)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o7]].distributions[2], raw"P($o_7$ | $o_2$=true)"))
+
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o8]].distributions[1], raw"P($o_8$ | $o_4$=false, $o_5$=0)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o8]].distributions[23], raw"P($o_8$ | $o_4$=false, $o_5$=22)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o8]].distributions[24], raw"P($o_8$ | $o_4$=true, $o_5$=0)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o8]].distributions[46], raw"P($o_8$ | $o_4$=true, $o_5$=22)"))
+
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o9]].distributions[1], raw"P($o_9$ | $o_1$=false, $o_5$=0)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o9]].distributions[23], raw"P($o_9$ | $o_1$=false, $o_5$=22)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o9]].distributions[24], raw"P($o_9$ | $o_1$=true, $o_5$=0)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o9]].distributions[46], raw"P($o_9$ | $o_1$=true, $o_5$=22)"))
+
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o10]].distributions[1], raw"P($o_{10}$ | $o_5$=0)"))
+		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o10]].distributions[23], raw"P($o_{10}$ | $o_5$=22)"))
 
 		PGFPlotsX.pgfsave("figures/cpds.png", p)
 	end
