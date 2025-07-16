@@ -2,30 +2,58 @@ using Plots
 using Graphs
 using LaTeXStrings
 
-function plot_alpha_action_heatmap(policy)
-	num_vectors = size(policy.alphas, 1)
-	num_samples = 101
-	belief_range = 1000
-	b_vals = range(0, 1, length=belief_range)
+function plot_alpha_action_heatmap(policy, pomdp_momdp)
+	if pomdp_momdp
+		num_vectors = size(policy.alphas, 1)
+		num_samples = 101
+		belief_range = 1000
+		b_vals = range(0, 1, length=belief_range)
 
-	# Each row: sample volume, each column: belief in life
-	dominating = zeros(Int, num_samples, belief_range)
+		# Each row: sample volume, each column: belief in life
+		dominating = zeros(Int, num_samples, belief_range)
 
-	for (i, b) in enumerate(b_vals)
-		for (j, s) in enumerate(1:num_samples)
-			best_score = -Inf
-			best_alpha = 0
-			for k in 1:num_vectors
-				α = policy.alphas[k]
-				idx1 = (s - 1) * 3 + 1  # life = 1
-				idx2 = (s - 1) * 3 + 2  # life = 2
-				v = α[idx1]*(1-b) + α[idx2]*b
-				if v > best_score
-					best_score = v
-					best_alpha = policy.action_map[k]
+		for (i, b) in enumerate(b_vals)
+			for (j, s) in enumerate(1:num_samples)
+				best_score = -Inf
+				best_alpha = 0
+				for k in 1:num_vectors
+					α = policy.alphas[k]
+					idx1 = (s - 1) * 3 + 1  # life = 1
+					idx2 = (s - 1) * 3 + 2  # life = 2
+					v = α[idx1]*(1-b) + α[idx2]*b
+					if v > best_score
+						best_score = v
+						best_alpha = policy.action_map[k]
+					end
 				end
+				dominating[j, i] = best_alpha
 			end
-			dominating[j, i] = best_alpha
+		end
+	else
+		num_samples = length(policy.alphas)  # e.g., 101
+		belief_range = 1000
+		b_vals = range(0, 1, length=belief_range)
+
+		# Each row: sample volume (alpha index), each column: belief in life=2
+		dominating = zeros(Int, num_samples, belief_range)
+
+		for (j, sam) in enumerate(1:num_samples)  # over sample indices
+			alpha_set = policy.alphas[sam]  # list of alpha vectors at this sample index
+			for (i, b) in enumerate(b_vals)  # over belief in life=2
+				best_score = -Inf
+				best_action = 0
+				for (k, α) in enumerate(alpha_set)
+					# Assuming α = [life=1, life=2, null]
+					v = α[1]*(1 - b) + α[2]*b
+					# Map action from policy.action_map if needed
+					action = policy.action_map !== nothing ? policy.action_map[sam][k] : k
+					if v > best_score
+						best_score = v
+						best_action = action
+					end
+				end
+				dominating[sam, i] = best_action
+			end
 		end
 	end
 

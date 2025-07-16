@@ -4,8 +4,8 @@ evaluations:
   threshold_high: 0.15 #0.99999 CONOPS ONLY
   threshold_low: 0.01 #0.00001 CONOPS ONLY
   verbose: true
-  policy_load: true # false
-  episodes: 10
+  policy_load: false
+  episodes: 3
   proj_name: "test" # "CONOPS_test-H_$(threshold_high)-L_$(threshold_low)"
   work_dir: "testing/solve1_2tau" # TODO: Set to meaningful name to play around
 
@@ -18,6 +18,7 @@ parameters:
 # add in off nominal nominal testing later:
 
 scenario:
-  acc_rate: 5
+  acc_rate: 3
   std_acc_rate: 0.5 # different values (e.g. 0.1, 0.25, 0.33) adds variability in sample accumulation behavior
   sample_Max_Chamber: 100
+  pomdp: true

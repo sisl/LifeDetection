@@ -8,6 +8,7 @@ Pkg.instantiate()
 # Libraries
 using POMDPs
 using POMDPTools
+using MOMDPs
 using Printf
 using SARSOP
 using POMDPLinter
@@ -36,6 +37,8 @@ proj_name = config["evaluations"]["proj_name"]
 ACC_RATE = config["scenario"]["acc_rate"]               # 270 μL per day
 SAMPLE_MAX_CHAMBER = config["scenario"]["sample_Max_Chamber"]  
 std_ACC_RATE = config["scenario"]["std_acc_rate"]        
+pomdp_momdp = config["scenario"]["pomdp"]        
+
 
 params = config["parameters"]
 
@@ -80,6 +83,7 @@ ACTION_CPDS = Dict(
 # Including Bayesnet & base files for running POMDP and simulation
 include("../src/bayes_net.jl")
 include("../src/LifeDetectionPOMDP.jl")
+include("../src/LifeDetectionMOMDP.jl")
 include("../src/common/simulate.jl")
 include("../src/common/utils.jl")
 
@@ -104,21 +108,39 @@ cd(work_dir) do
 	for (λ, τ, γ) in IterTools.product(lambdas, taus, gammas)
 		println("Running with λ=$λ, τ=$τ, γ=$γ")
 
-		# Generate new POMDP for each change in parameters
-		pomdp = LifeDetectionPOMDP(
-			bn=bn, # inside /src/common/bayesnet_generation.jl
-			λ=λ,
-			τ=τ,
-			ACTION_CPDS=ACTION_CPDS,
-			max_obs=determineMaxObs(ACTION_CPDS, bn),
-			inst=NUM_INSTRUMENTS,
-			sample_volume=SAMPLE_MAX_CHAMBER,
-			life_states=LIFE_STATES,
-			ACC_RATE=ACC_RATE,
-			sample_use=[HRMS, SMS, μCE_LIF, ESA, microscope, nanopore, none],
-			discount=γ,
-			MAX_PENALTY=10000,
-			std_fraction=std_ACC_RATE)
+		if pomdp_momdp
+			# Generate new POMDP for each change in parameters
+			pomdp = LifeDetectionPOMDP(
+				bn=bn, # inside /src/common/bayesnet_generation.jl
+				λ=λ,
+				τ=τ,
+				ACTION_CPDS=ACTION_CPDS,
+				max_obs=determineMaxObs(ACTION_CPDS, bn),
+				inst=NUM_INSTRUMENTS,
+				sample_volume=SAMPLE_MAX_CHAMBER,
+				life_states=LIFE_STATES,
+				ACC_RATE=ACC_RATE,
+				sample_use=[HRMS, SMS, μCE_LIF, ESA, microscope, nanopore, none],
+				discount=γ,
+				MAX_PENALTY=10000,
+				std_fraction=std_ACC_RATE)
+		else
+			# Generate new POMDP for each change in parameters
+			pomdp = LifeDetectionMOMDP(
+				bn=bn, # inside /src/common/bayesnet_generation.jl
+				λ=λ,
+				τ=τ,
+				ACTION_CPDS=ACTION_CPDS,
+				max_obs=determineMaxObs(ACTION_CPDS, bn),
+				inst=NUM_INSTRUMENTS,
+				sample_volume=SAMPLE_MAX_CHAMBER,
+				life_states=LIFE_STATES,
+				ACC_RATE=ACC_RATE,
+				sample_use=[HRMS, SMS, μCE_LIF, ESA, microscope, nanopore, none],
+				discount=γ,
+				MAX_PENALTY=10000,
+				std_fraction=std_ACC_RATE)
+		end
 
 		project_name = "$(proj_name)_lambda_$(pomdp.λ)_tau_$(pomdp.τ)_gamma_$(pomdp.discount)_sample_$(pomdp.sample_volume)"
 
@@ -149,7 +171,7 @@ cd(work_dir) do
 
 		if POLICY == "CONOPS"
 			# Running CONOPS:
-			rewards, accuracy = simulate_policyVLD(pomdp, "policy", "CONOPS", EPISODES, VERBOSE, WANDB, project_name, threshold_high, threshold_low) # SARSOP or conops or greedy
+			rewards, accuracy = simulate_policyVLD(pomdp, "policy", "CONOPS", EPISODES, VERBOSE, WANDB, project_name, threshold_high, threshold_low,pomdp_momdp) # SARSOP or conops or greedy
 			if WANDB
 				sleep(1)
 				close(run)
@@ -163,7 +185,7 @@ cd(work_dir) do
 			if POLICYLOAD
 				policy = load_policy(pomdp, "policy.out")
 			else
-				pomdpx = POMDPFile(pomdp)
+				# pomdpx = POMDPFile(pomdp)
 				policy = solve(solver, pomdp)
 			end
 
@@ -172,17 +194,17 @@ cd(work_dir) do
 				# Wandb.wandb.save("policy.out")
 				sleep(1)
 				plot_alpha_dots(policy)
-				plot_alpha_action_heatmap(policy)
+				plot_alpha_action_heatmap(policy, pomdp_momdp)
 				Wandb.wandb.save("figures/plot_alpha_dots.png")
 				Wandb.wandb.save("figures/plot_alpha_action_heatmap.png")
 
 				close(run)
 			end
-			rewards, accuracy = simulate_policyVLD(pomdp, policy, "SARSOP", EPISODES, VERBOSE, WANDB, project_name, threshold_high, threshold_low) # SARSOP or conops or greedy
+			rewards, accuracy = simulate_policyVLD(pomdp, policy, "SARSOP", EPISODES, VERBOSE, WANDB, project_name, threshold_high, threshold_low,pomdp_momdp) # SARSOP or conops or greedy
 
 
 		elseif POLICY == "GREEDY"
-			rewards, accuracy = simulate_policyVLD(pomdp, "policy", "GREEDY", EPISODES, VERBOSE, WANDB, project_name, threshold_high, threshold_low) # SARSOP or conops or greedy
+			rewards, accuracy = simulate_policyVLD(pomdp, "policy", "GREEDY", EPISODES, VERBOSE, WANDB, project_name, threshold_high, threshold_low,pomdp_momdp) # SARSOP or conops or greedy
 
 		else
 			println("No Valid Policy Selected")

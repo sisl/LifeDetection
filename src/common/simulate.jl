@@ -1,6 +1,6 @@
 using ProgressMeter
 
-function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=true, wandb=false, wandb_Name="", threshold_high= 0.999, threshold_low=0.001)
+function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=true, wandb=false, wandb_Name="", threshold_high= 0.999, threshold_low=0.001, pomdp_momdp = true)
 
 	if verbose
 		println("--------------------------------START EPISODES---------------------------------")
@@ -37,9 +37,15 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 			)
 		end
 
-		updater = DiscreteUpdater(pomdp)
-		b = initialize_belief(updater, initialstateSample(pomdp, 0))
-		s = initialstateSample(pomdp, 0)
+		if pomdp_momdp
+			updater = DiscreteUpdater(pomdp)
+			b = initialize_belief(updater, initialstateSample(pomdp, 0))
+			s = initialstateSample(pomdp, 0)
+		else
+			updater = MOMDPDiscreteUpdater(pomdp)
+			b = initialstate_y(pomdp,1) #  initialstate(pomdp) #
+			s = (1, rand(initialstate_y(pomdp,1)))
+		end
 
 		if verbose
 			println("\nPolicy Simulation: Episode ", episode)
@@ -53,8 +59,13 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 		step = 1
 		true_state = 1 # track s_L (life state)
 		a = 0
-		s = 1
-		sp = 1
+		if pomdp_momdp
+			s = 1
+			sp = 1
+		else
+			s = (1,1)
+			sp = (1,1)
+		end
 		belief_life = pdf(b, 2)
 		action_name = ""
 		action_final = 0
@@ -88,15 +99,25 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 					correct["ff"] += 1  # true negative
 				end
 
-				# Get the current sample volume from state index
-				sample_volume, _ = stateindex_to_state(s, pomdp.life_states)
+				if pomdp_momdp
+				
+					# Get the current sample volume from state index
+					sample_volume, _ = stateindex_to_state(s, pomdp.life_states)
 
-				# Sample new life state while keeping sample_volume fixed
-				s = rand(initialstateSample(pomdp, sample_volume))
+					# Sample new life state while keeping sample_volume fixed
+					s = rand(initialstateSample(pomdp, sample_volume))
 
-				# Reinitialize belief for same sample_volume
-				b = initialize_belief(updater, initialstateSample(pomdp, sample_volume))
-				belief_life = pdf(b, state_to_stateindex(sample_volume, 2))
+					# Reinitialize belief for same sample_volume
+					b = initialize_belief(updater, initialstateSample(pomdp, sample_volume))
+					belief_life = pdf(b, state_to_stateindex(sample_volume, 2))
+
+				else
+					s = (s[1], rand(initialstate_y(pomdp,1)))
+					b = initialstate_y(pomdp)
+					belief_life = pdf(b, 2)
+
+				end
+
                 if verbose
                     println("[Resetting] Reached terminal state. Sampling new initial state.")
                 end
@@ -104,7 +125,11 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 
 			# get action, next state, and observation
 			if type == "SARSOP"
-				a = action(policy, b)
+				if pomdp_momdp
+					a = action(policy, b)
+				else
+					a = action(policy, b, s[1])
+				end
 			elseif type == "greedy"
 				a = action_greedy_policy(policy, b, step)
 			elseif type == "CONOPS"
@@ -120,18 +145,21 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 
 			# format action and observation names
 			action_name = a >= pomdp.inst+1 ? (a == pomdp.inst+1 ? "Declare Dead" : "Declare Life") : (a == pomdp.inst ? "Accumulate" : "Sensor $(a)")
-			accu, true_state = stateindex_to_state(s, pomdp.life_states)  # Save the current state before transitioning 
-			accu_2, true_state2 = stateindex_to_state(sp, pomdp.life_states)  # Save the current state before transitioning 
-
-			# Get belief in life at this state
-			s_check = s
-			# if o != 0
-			if true_state == 1 #&& step > 1
-				s_check = s_check + 1
+			if pomdp_momdp
+				accu, true_state = stateindex_to_state(s, pomdp.life_states)  # Save the current state before transitioning 
+				accu_2, true_state2 = stateindex_to_state(sp, pomdp.life_states)  # Save the current state before transitioning 
+				s_check = s
+				if true_state == 1 #&& step > 1
+					s_check = s_check + 1
+				end
+				belief_life = pdf(b, s_check)
+			else
+				accu = s[1]
+				accu_2 = sp[1]
+				true_state = s[2]
+				true_state2 = sp[2]
+				belief_life = pdf(b, 2)
 			end
-			belief_life = pdf(b, s_check)
-			# end
-
 			if verbose
 				@printf("%3d  | %-12s | %.3f        | %d          |  %d         | %.2f         \n",
 					step, action_name, belief_life, true_state, accu, total_reward)
@@ -157,7 +185,12 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 				)
 
 			end
-			b = update(updater, b, a, o)
+
+			if pomdp_momdp
+				b = update(updater, b, a, o)
+			else
+				b = update(updater, b, a, o, s[1], sp[1])
+			end
 
 			# end
 			s = sp
