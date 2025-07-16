@@ -65,7 +65,7 @@ push!(
 		[2],
 		[
 			DiscreteBeta(1, 10, lo=0.0, hi=22.0, bins=23), # dead
-			DiscreteBeta(3, 1, lo=0.0, hi=22.0, bins=23),   # alive
+			DiscreteBeta(3, 1, lo=0.0, hi=22.0, bins=23),  # alive
 		],
 	),
 )
@@ -77,12 +77,10 @@ push!(bn, StaticCPD(:o6, [:sL], [2], [
 ]))
 
 # salinity: 10 bins
-push!(
-	bn,
-	DiscreteCPD(:o7, [:o2], [2], [
-		Beta(1, 1), # no cell membrane
-		Beta(2, 1), # cell membrane
-	]),
+push!(bn, StaticCPD(:o7, [:o2], [2], [
+	Beta(1, 1), # no cell membrane
+	Beta(2, 1), # cell membrane
+])
 )
 
 # CHNOPS: simplified approach - just depend on o4

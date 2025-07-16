@@ -101,11 +101,11 @@ push!(
 # CHNOPS: 10 bins
 # o4 x o5 = 2 x 23 = 46 distributions to fully describe CPD
 o4_cpds = [
-	DiscreteBeta(1, 2, bins=5),  # P(o8 | o4 = 0) (MA < 15)
-	DiscreteBeta(3, 1, bins=5),   # P(o8 | o4 = 1) (MA ≥ 15)
+	DiscreteBeta(1, 1.5, bins=5),  # P(o8 | o4 = 0) (MA < 15)
+	DiscreteBeta(2, 1, bins=5),   # P(o8 | o4 = 1) (MA ≥ 15)
 ]
 # P(o8 | o5 = 0 to 22)
-o5_cpds = [DiscreteBeta(1 + i/352, 1, bins=5) for i ∈ 0:22]
+o5_cpds = [DiscreteBeta(1 + i*0.001, 1, bins=5) for i ∈ 0:22]
 # Joint distributions: P(o8 | o4, o5) = P(o8 | o4) * P(o8 | o5)
 o8_cpds = Categorical[]
 for i ∈ 0:1

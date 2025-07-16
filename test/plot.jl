@@ -20,7 +20,8 @@ if PLOT_BN || PLOT_CPDS || DECISION_TREE
 	Pkg.activate("LifeDetectionPkg")
 	Pkg.instantiate()
 	include("../src/common/plotting_tikz.jl")
-	include("../src/bayes_net.jl")
+	#include("../src/bayes_net.jl")
+	include("../src/test_bayes_net.jl")
 elseif PARETO_FRONTIER || PARETO_FRONTIER_SINGLE
 	Pkg.activate("wandbPkg")
 	Pkg.instantiate()
@@ -308,7 +309,8 @@ end
 if PLOT_CPDS == true
 	@eval begin
 		p = @pgf GroupPlot({
-			group_style = {group_size = "6 by 4", horizontal_sep = "2.5cm", vertical_sep = "2.5cm"},
+			#group_style = {group_size = "6 by 4", horizontal_sep = "2.5cm", vertical_sep = "2.5cm"},
+			group_style = {group_size = "2 by 3", horizontal_sep = "2.5cm", vertical_sep = "2.5cm"},
 			width = "2.5cm",
 			height = "4cm",
 		})
@@ -353,6 +355,7 @@ if PLOT_CPDS == true
 		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o10]].distributions[1], raw"P($o_{10}$ | $o_5$=0)"))
 		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o10]].distributions[23], raw"P($o_{10}$ | $o_5$=22)"))
 
-		PGFPlotsX.pgfsave("figures/cpds.png", p)
+		#PGFPlotsX.pgfsave("figures/cpds.png", p)
+		PGFPlotsX.pgfsave("figures/test_cpds.png", p)
 	end
 end
