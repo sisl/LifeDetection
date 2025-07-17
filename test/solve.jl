@@ -70,12 +70,12 @@ none = 0#non-instrument actions
 ##################### Mapping Instrument Actions to sample characteristics #####################
 
 ACTION_CPDS = Dict(
-	1 => [:o4, :o6, :o7, :o9],   # HRMS ()
-	2 => [:o4, :o5],              # SMS
-	3 => [:o4, :o5],              # μoE_LIF
-	4 => [:o6, :o7],              # ESA
-	5 => [:o1, :o2],              # microscope
-	6 => [:sL],                   # nanopore
+	1 => [:o5, :o7, :o8, :o10],   # HRMS ()
+	2 => [:o5, :o6],              # SMS
+	3 => [:o5, :o6],              # μoE_LIF
+	4 => [:o7, :o8],              # ESA
+	5 => [:o2, :o3],              # microscope
+	6 => [:o1],                   # nanopore
 )
 
 

@@ -53,14 +53,15 @@ function DiscreteGaussian(
 end
 
 function DiscreteBeta(α, β; lo::Float64=0.0, hi::Float64=1.0, bins::Int=10)
-	"""
-	Discretizes a Beta distribution over the range [lo, hi]
-	into equal-width bins, and returns a Categorical distribution over those bins.
-	"""
-	grid = range(lo, stop=hi, length=bins)
-	scaled = (grid .- lo) ./ (hi - lo) # scale domain to [a, b]
-	p = pdf.(Beta(α, β), scaled)
-	p ./= sum(p) # normalize
-
-	return Categorical(p)
+    """
+    Discretizes a Beta(α, β) distribution into `bins` equal-width bins
+    over [lo, hi], using the midpoint of each bin to compute probabilities.
+    Returns a Categorical distribution.
+    """
+    bin_width = (hi - lo) / bins
+    midpoints = lo .+ bin_width .* ((1:bins) .- 0.5)  # midpoints of bins
+    scaled = (midpoints .- lo) ./ (hi - lo)  # rescale to [0, 1] for Beta
+    p = pdf.(Beta(α, β), scaled)
+    p ./= sum(p)  # normalize to sum to 1
+    return Categorical(p)
 end

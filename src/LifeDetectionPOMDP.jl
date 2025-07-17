@@ -161,6 +161,11 @@ function POMDPs.observation(pomdp::LifeDetectionPOMDP, a::Int, sp::Int)
 		# return SparseCat(obs_sample_volume(sample_volume, pomdp.max_obs+1),probs)	
 	end
 
+	if sample_volume < pomdp.sample_use[a] # infeasible sample volume
+		obs_range = obs_sample_volume(sample_volume, pomdp.max_obs)
+		probs = fill(1.0 / length(obs_range), length(obs_range))
+		return Deterministic(obs_range[1])
+	end
 
 	return SparseCat(obs_sample_volume(sample_volume, pomdp.max_obs), distObservations(pomdp.ACTION_CPDS, life_state, a, pomdp.max_obs))
 end
@@ -174,14 +179,14 @@ function expected_belief_change(pomdp::LifeDetectionPOMDP, a::Int)
 	expected_change = 0.0
 
 	# P(L=true)
-	prior = infer(pomdp.bn, :C0).potential[2]
+	prior = infer(pomdp.bn, :sL).potential[2]
 
 	# get nodes for this action
 	nodes = pomdp.ACTION_CPDS[a]
 	for node in nodes
 		for obs in 1:pomdp.max_obs
 			# P(L=true | obs)
-			posterior = infer(pomdp.bn, :C0, evidence=Assignment(Dict(node => obs)))
+			posterior = infer(pomdp.bn, :sL, evidence=Assignment(Dict(node => obs)))
 			posterior_prob = posterior.potential[2]
 
 			# P(obs)

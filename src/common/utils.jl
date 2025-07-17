@@ -6,7 +6,7 @@ function determineMaxObs(actionCpds,bn)
     for action in collect(keys(actionCpds))
         for lifeState in [1,2]
             probs = Float64[]  # P(obs | l=1)
-            posterior = infer(bn, actionCpds[action] ,evidence=(Assignment(:C0 => lifeState )))
+            posterior = infer(bn, actionCpds[action] ,evidence=(Assignment(:sL => lifeState )))
 
             # Determine domain sizes (bins per variable)
             domain_sizes = [length(bn.cpds[bn.name_to_index[v]].distributions[1].p) for v in posterior.dimensions]
@@ -27,7 +27,7 @@ end
 
 
 function distObservations(actionCpds, lifeState, action, maxObs)
-    posterior = infer(bn, actionCpds[action] ,evidence=(Assignment(:C0 => lifeState )))
+    posterior = infer(bn, actionCpds[action] ,evidence=(Assignment(:sL => lifeState )))
 
     probs = Float64[]  # P(obs | l=1)
 

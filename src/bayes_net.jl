@@ -85,8 +85,8 @@ p = [ # U-shaped replacement for Beta(0.5, 0.5)
 p ./= sum(p)
 c6 = Categorical(p)
 push!(bn, DiscreteCPD(:o6, [:sL], [2], [
-	DiscreteBeta(3, 3, bins=10),  # dead
-	c6,                            # alive
+	DiscreteBeta(1.05, 1.05, bins=10),  # dead
+	DiscreteBeta(0.95, 0.95, bins=10),  # alive
 ]))
 
 # salinity: 10 bins
@@ -94,7 +94,7 @@ push!(
 	bn,
 	DiscreteCPD(:o7, [:o2], [2], [
 		DiscreteBeta(1, 1, bins=5),   # no cell membrane
-		DiscreteBeta(1.2, 1, bins=5),    # cell membrane
+		DiscreteBeta(1.05, 1, bins=5),    # cell membrane
 	]),
 )
 
