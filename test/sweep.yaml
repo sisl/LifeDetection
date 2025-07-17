@@ -21,4 +21,5 @@ scenario:
   acc_rate: 3
   std_acc_rate: 0.5 # different values (e.g. 0.1, 0.25, 0.33) adds variability in sample accumulation behavior
   sample_Max_Chamber: 100
-  pomdp: true
+  pomdp: true # always keep true no momdps
+  

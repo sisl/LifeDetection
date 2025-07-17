@@ -41,7 +41,7 @@ function LifeDetectionMOMDP(;
 end
 
 # MOMDPs.states(momdp::LifeDetectionMOMDP) = 1:(momdp.sample_volume*momdp.life_states+momdp.life_states) #(momdp.sample_volume*((2^momdp.life_states)))+(2^momdp.life_states)
-MOMDPs.states_x(momdp::LifeDetectionMOMDP) = 1:momdp.sample_volume+1 #+1 is just the zero
+MOMDPs.states_x(momdp::LifeDetectionMOMDP) = 0:momdp.sample_volume#+1 #+1 is just the zero
 
 # 1 -> dead
 # 2 -> alive
@@ -53,14 +53,16 @@ MOMDPs.states_y(momdp::LifeDetectionMOMDP) = 1:momdp.life_states
 POMDPs.actions(momdp::LifeDetectionMOMDP) = [1:momdp.inst..., momdp.inst+1, momdp.inst+2]
 
 # Extra observation at beginning which will be null observation
-POMDPs.observations(momdp::LifeDetectionMOMDP) = 0:momdp.max_obs
+POMDPs.observations(momdp::LifeDetectionMOMDP) = 1:((pomdp.max_obs)*(pomdp.sample_volume+1)) #1:momdp.max_obs
 
-MOMDPs.stateindex_x(momdp::LifeDetectionMOMDP, s_x::Int)  = s_x # s::Tuple{Int, Int}
+MOMDPs.stateindex_x(momdp::LifeDetectionMOMDP, s_x::Int)  = s_x+1 # s::Tuple{Int, Int}
+MOMDPs.stateindex_x(momdp::LifeDetectionMOMDP, s::Tuple{Int, Int})  = s[1]+1 # s::Tuple{Int, Int}
+MOMDPs.stateindex_y(momdp::LifeDetectionMOMDP, s::Tuple{Int, Int})  = s[2] # s::Tuple{Int, Int}
 MOMDPs.stateindex_y(momdp::LifeDetectionMOMDP, s_y::Int)  = s_y # s::Tuple{Int, Int}
 POMDPs.actionindex(momdp::LifeDetectionMOMDP, a::Int) = a
-POMDPs.obsindex(momdp::LifeDetectionMOMDP, o::Int)    = o+1
+POMDPs.obsindex(momdp::LifeDetectionMOMDP, o::Int)    = o
 
-MOMDPs.initialstate_x(momdp::LifeDetectionMOMDP) = SparseCat(1:momdp.sample_volume, fill(1.0 / momdp.sample_volume, momdp.sample_volume))
+MOMDPs.initialstate_x(momdp::LifeDetectionMOMDP) = SparseCat(0:momdp.sample_volume-1, fill(1.0 / (momdp.sample_volume), momdp.sample_volume))
 MOMDPs.initialstate_y(momdp::LifeDetectionMOMDP, x) = SparseCat(1:2, [0.5,0.5])
 # function MOMDPs.initialstate_y(momdp::LifeDetectionMOMDP, x) 
 # 	P_life = momdp.bn.cpds[1].distributions[1].p[2]
@@ -91,37 +93,30 @@ function MOMDPs.transition_x(momdp::LifeDetectionMOMDP, s::Tuple{Int,Int}, a::In
 		max_volume = momdp.sample_volume
 
 		# Generate possible accumulation values (you can truncate this range if needed for performance)
-		acc_vals = 1:max_volume+1 - x
+		acc_vals = 0:max_volume - x
 
-		if x == 101 || x == 100
-            return Deterministic(101)
-        end
 
 		# Compute probability of each accumulation using Normal(μ, σ)
 		acc_probs = [pdf(Normal(μ, σ), a) for a in acc_vals]
-		total_prob = sum(acc_probs)
-
-        # # Handle near-zero or zero total probability
-        # if total_prob < 1e-8
-        #     return Deterministic(x)
-        # end
-
 		acc_probs = acc_probs ./ sum(acc_probs)  # Normalize
 
 		# Compute new sample volumes
 		sample_vols = [min(x + a, max_volume+1) for a in acc_vals]
-
+		# inds = findall(p -> p > 1e-4, acc_probs)
+		# return SparseCat(sample_vols[inds], normalize(acc_probs[inds], 1))
 		return SparseCat(sample_vols, acc_probs)
 
 	end
 
-	if momdp.sample_use[a] < x
-		# Instrument action → reduce sample volume
-		return Deterministic(clamp(x - momdp.sample_use[a], 1, momdp.sample_volume))
-	end
+	return Deterministic(clamp(x - momdp.sample_use[a], 0, momdp.sample_volume))
 
-	# Stay in same life state while using instrument if invalid action
-	return Deterministic(x)
+	# if momdp.sample_use[a] < x
+	# 	# Instrument action → reduce sample volume
+	# 	return Deterministic(clamp(x - momdp.sample_use[a], 1, momdp.sample_volume))
+	# end
+
+	# # Stay in same life state while using instrument if invalid action
+	# return Deterministic(x)
 
 
 end
@@ -145,18 +140,18 @@ function MOMDPs.transition_y(momdp::LifeDetectionMOMDP, s::Tuple{Int,Int}, a::In
 
 end
 
-function POMDPs.observation(momdp::LifeDetectionMOMDP, a::Int, s::Tuple{Int,Int})
+function POMDPs.observation(momdp::LifeDetectionMOMDP, a::Int, sp::Tuple{Int,Int})
 
 	# return null observation if...
 	# terminal state
 	# declare alive/dead
 
 	if POMDPs.isterminal(momdp, s) || a == momdp.inst + 1 || a == momdp.inst + 2
-		return Deterministic(0)
+		return Deterministic(1)
 	end
 
 	if a == momdp.inst
-		return Deterministic(0) #SparseCat(1:momdp.max_obs, fill(1.0 / momdp.max_obs, momdp.max_obs))
+		return Deterministic(s[1]) #SparseCat(1:momdp.max_obs, fill(1.0 / momdp.max_obs, momdp.max_obs))
 	end
 
 	return SparseCat(1:momdp.max_obs, distObservations(momdp.ACTION_CPDS, s[2], a, momdp.max_obs))

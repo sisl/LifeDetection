@@ -2,10 +2,10 @@ using Plots
 using Graphs
 using LaTeXStrings
 
-function plot_alpha_action_heatmap(policy, pomdp_momdp)
+function plot_alpha_action_heatmap(policy, pomdp_momdp,num_samples)
 	if pomdp_momdp
 		num_vectors = size(policy.alphas, 1)
-		num_samples = 101
+		num_samples = num_samples +1
 		belief_range = 1000
 		b_vals = range(0, 1, length=belief_range)
 

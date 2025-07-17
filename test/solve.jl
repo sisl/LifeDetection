@@ -3,6 +3,7 @@
 
 using Pkg
 Pkg.activate("wandbPkg")
+
 Pkg.instantiate()
 
 # Libraries
@@ -69,12 +70,12 @@ none = 0#non-instrument actions
 ##################### Mapping Instrument Actions to sample characteristics #####################
 
 ACTION_CPDS = Dict(
-	1 => [:C5, :C7, :C8, :C10],   # HRMS ()
-	2 => [:C5, :C6],              # SMS
-	3 => [:C5, :C6],              # μCE_LIF
-	4 => [:C7, :C8],              # ESA
-	5 => [:C2, :C3],              # microscope
-	6 => [:C1],                   # nanopore
+	1 => [:o4, :o6, :o7, :o9],   # HRMS ()
+	2 => [:o4, :o5],              # SMS
+	3 => [:o4, :o5],              # μoE_LIF
+	4 => [:o6, :o7],              # ESA
+	5 => [:o1, :o2],              # microscope
+	6 => [:sL],                   # nanopore
 )
 
 
@@ -194,7 +195,7 @@ cd(work_dir) do
 				# Wandb.wandb.save("policy.out")
 				sleep(1)
 				plot_alpha_dots(policy)
-				plot_alpha_action_heatmap(policy, pomdp_momdp)
+				plot_alpha_action_heatmap(policy, pomdp_momdp,SAMPLE_MAX_CHAMBER)
 				Wandb.wandb.save("figures/plot_alpha_dots.png")
 				Wandb.wandb.save("figures/plot_alpha_action_heatmap.png")
 

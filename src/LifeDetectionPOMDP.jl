@@ -127,10 +127,8 @@ function POMDPs.transition(pomdp::LifeDetectionPOMDP, s::Int, a::Int)
 			push!(probs, p_acc * P_life)        # alive
 		end
 
-		# Normalize again to guard against any floating-point error
-		probs = probs ./ sum(probs)
-
-		return SparseCat(support, probs)
+		
+		return SparseCat(support, normalize(probs,1.0))
 	end
 
 	# Instrument action → reduce sample volume
