@@ -202,8 +202,8 @@ function observation_simulate(pomdp::LifeDetectionPOMDP, a::Int, sp::Int)
 		return obs_range[1]
 	end
 
-	samples = zeros(4)
 	posterior = infer(bn, pomdp.ACTION_CPDS[a] ,evidence=(Assignment(:sL => life_state )))
+	samples = zeros(length(posterior.dimensions))
 
 	for (i, obs_var) in enumerate(posterior.dimensions)
 		if obs_var == :o4 || obs_var == :o6 || obs_var == :o7
