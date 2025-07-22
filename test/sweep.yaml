@@ -1,12 +1,12 @@
 evaluations:
   wandb: true
-  policy: "SARSOP" # "CONOPS" "GREEDY" "SARSOP
-  threshold_high: 0.15 #0.99999 CONOPS ONLY
-  threshold_low: 0.01 #0.00001 CONOPS ONLY
+  policy: "CONOPS" # "CONOPS" "GREEDY" "SARSOP
+  threshold_high: [0.6, 0.7, 0.8, 0.9, 0.95, 0.98, 0.99, 0.995, 0.998, 0.999] # CONOPS ONLY
+  threshold_low: [0.4, 0.3, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001] # CONOPS ONLY
   verbose: true
   policy_load: false
-  episodes: 3
-  proj_name: "test" # "CONOPS_test-H_$(threshold_high)-L_$(threshold_low)"
+  episodes: 100
+  proj_name: "CONOPS" # "CONOPS_test-H_$(threshold_high)-L_$(threshold_low)"
   work_dir: "testing/solve1_2tau" # TODO: Set to meaningful name to play around
 
 
@@ -18,7 +18,7 @@ parameters:
 # add in off nominal nominal testing later:
 
 scenario:
-  acc_rate: 10
+  acc_rate: 3
   std_acc_rate: 0.5 # different values (e.g. 0.1, 0.25, 0.33) adds variability in sample accumulation behavior
   sample_Max_Chamber: 100
   pomdp: true # always keep true no momdps

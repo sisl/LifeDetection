@@ -137,7 +137,7 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 			end
 
 			sp = rand(transition(pomdp, s, a))
-			o = rand(observation(pomdp, a, sp))
+			o = observation_simulate(pomdp, a, sp)#rand(observation(pomdp, a, sp))
 
 			# Get reward and accumulate total reward
 			r = reward(pomdp, s, a, sp)

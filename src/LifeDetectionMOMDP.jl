@@ -4,6 +4,7 @@ using MOMDPs
 
 struct LifeDetectionMOMDP <: MOMDP{Int, Int, Int, Int}  # MOMDP{State_x, State_y , Action, Observation}
 	bn::DiscreteBayesNet # Bayesian Network,
+	test_bn::BayesNet # test Bayes Net (Continuous)
 	λ::Float64# Parameter for penalty
 	τ::Float64# Parameter for declaring abiotic
 	ACTION_CPDS::Dict# Connecting actions to CPDS
@@ -23,6 +24,7 @@ end
 # Custom constructor to handle dynamic initialization
 function LifeDetectionMOMDP(;
 	bn::DiscreteBayesNet, # Bayesian Network,
+	test_bn::BayesNet, # test Bayes Net (Continuous)
 	λ::Float64,
 	τ::Float64,
 	ACTION_CPDS::Dict,
@@ -37,7 +39,7 @@ function LifeDetectionMOMDP(;
 	MAX_PENALTY::Int64=10000,
 	std_fraction::Float64=0.25,
 )
-	return LifeDetectionMOMDP(bn, λ, τ, ACTION_CPDS, max_obs, inst, sample_volume, life_states, ACC_RATE, sample_use, discount,MAX_PENALTY,std_fraction)
+	return LifeDetectionMOMDP(bn,test_bn, λ, τ, ACTION_CPDS, max_obs, inst, sample_volume, life_states, ACC_RATE, sample_use, discount,MAX_PENALTY,std_fraction)
 end
 
 # MOMDPs.states(momdp::LifeDetectionMOMDP) = 1:(momdp.sample_volume*momdp.life_states+momdp.life_states) #(momdp.sample_volume*((2^momdp.life_states)))+(2^momdp.life_states)

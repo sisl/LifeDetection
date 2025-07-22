@@ -83,6 +83,7 @@ ACTION_CPDS = Dict(
 
 # Including Bayesnet & base files for running POMDP and simulation
 include("../src/bayes_net.jl")
+include("../src/test_bayes_net.jl")
 include("../src/LifeDetectionPOMDP.jl")
 include("../src/LifeDetectionMOMDP.jl")
 include("../src/common/simulate.jl")
@@ -112,7 +113,8 @@ cd(work_dir) do
 		if pomdp_momdp
 			# Generate new POMDP for each change in parameters
 			pomdp = LifeDetectionPOMDP(
-				bn=bn, # inside /src/common/bayesnet_generation.jl
+				bn=bn, # inside /src/common/bayesnet.jl
+				test_bn=cont_bn, # for testing only
 				λ=λ,
 				τ=τ,
 				ACTION_CPDS=ACTION_CPDS,
@@ -128,7 +130,8 @@ cd(work_dir) do
 		else
 			# Generate new POMDP for each change in parameters
 			pomdp = LifeDetectionMOMDP(
-				bn=bn, # inside /src/common/bayesnet_generation.jl
+				bn=bn, # inside /src/common/bayesnet.jl
+				test_bn=cont_bn, # for testing only
 				λ=λ,
 				τ=τ,
 				ACTION_CPDS=ACTION_CPDS,
@@ -142,43 +145,54 @@ cd(work_dir) do
 				MAX_PENALTY=10000,
 				std_fraction=std_ACC_RATE)
 		end
-
-		project_name = "$(proj_name)_lambda_$(pomdp.λ)_tau_$(pomdp.τ)_gamma_$(pomdp.discount)_sample_$(pomdp.sample_volume)"
-
-		if WANDB
-			# using PyCall
-			# Start a new wandb run to track this script.
-			run = WandbLogger( #Wandb.wandb.init(
-				# Set the wandb entity where your project will be logged (generally your team name).
-				entity="sherpa-rpa",
-				# Set the wandb project where this run will be logged.
-				project=project_name,
-				# Track hyperparameters and run metadata.
-				config=Dict(
-					"bayesnet" => pomdp.bn,
-					"lambda" => pomdp.λ,
-					"tau" => pomdp.τ,
-					"ACTION_CPDS" => pomdp.ACTION_CPDS,
-					"max_obs" => pomdp.max_obs,
-					"inst" => pomdp.inst,
-					"sample_volume" => pomdp.sample_volume,
-					"life_states" => pomdp.life_states,
-					"ACC_RATE" => pomdp.ACC_RATE,
-					"sample_use" => pomdp.sample_use,
-					"gamma" => pomdp.discount,
-				),
-			)
-		end
+			
 
 		if POLICY == "CONOPS"
-			# Running CONOPS:
-			rewards, accuracy = simulate_policyVLD(pomdp, "policy", "CONOPS", EPISODES, VERBOSE, WANDB, project_name, threshold_high, threshold_low,pomdp_momdp) # SARSOP or conops or greedy
-			if WANDB
-				sleep(1)
-				close(run)
+			for (t_h,t_l) in IterTools.product(threshold_high, threshold_low)
+				println("Running with $t_h,$t_l")
+				project_name = "$(proj_name)_t-high_$(t_h)_t-low_$(t_l)"
+				
+				# Running CONOPS:
+				rewards, accuracy = simulate_policyVLD(pomdp, 
+														"policy", 
+														"CONOPS", # SARSOP or conops or greedy
+														EPISODES, 
+														VERBOSE, 
+														WANDB, 
+														project_name, 
+														t_h,
+														t_l,
+														pomdp_momdp) 
+				
 			end
 		elseif POLICY == "SARSOP"
 
+			project_name = "$(proj_name)_lambda_$(pomdp.λ)_tau_$(pomdp.τ)_gamma_$(pomdp.discount)_sample_$(pomdp.sample_volume)"
+
+			if WANDB
+				# using PyCall
+				# Start a new wandb run to track this script.
+				run = WandbLogger( #Wandb.wandb.init(
+					# Set the wandb entity where your project will be logged (generally your team name).
+					entity="sherpa-rpa",
+					# Set the wandb project where this run will be logged.
+					project=project_name,
+					# Track hyperparameters and run metadata.
+					config=Dict(
+						"bayesnet" => pomdp.bn,
+						"lambda" => pomdp.λ,
+						"tau" => pomdp.τ,
+						"ACTION_CPDS" => pomdp.ACTION_CPDS,
+						"max_obs" => pomdp.max_obs,
+						"inst" => pomdp.inst,
+						"sample_volume" => pomdp.sample_volume,
+						"life_states" => pomdp.life_states,
+						"ACC_RATE" => pomdp.ACC_RATE,
+						"sample_use" => pomdp.sample_use,
+						"gamma" => pomdp.discount,
+					),
+				)
+			end
 			# Running SARSOP
 			solver = SARSOPSolver(verbose=true, timeout=200)
 			# @show_requirements POMDPs.solve(solver, pomdp)
@@ -201,11 +215,11 @@ cd(work_dir) do
 
 				close(run)
 			end
-			rewards, accuracy = simulate_policyVLD(pomdp, policy, "SARSOP", EPISODES, VERBOSE, WANDB, project_name, threshold_high, threshold_low,pomdp_momdp) # SARSOP or conops or greedy
+			rewards, accuracy = simulate_policyVLD(pomdp, policy, "SARSOP", EPISODES, VERBOSE, WANDB, project_name, threshold_high[1], threshold_low[1],pomdp_momdp) # SARSOP or conops or greedy
 
 
 		elseif POLICY == "GREEDY"
-			rewards, accuracy = simulate_policyVLD(pomdp, "policy", "GREEDY", EPISODES, VERBOSE, WANDB, project_name, threshold_high, threshold_low,pomdp_momdp) # SARSOP or conops or greedy
+			rewards, accuracy = simulate_policyVLD(pomdp, "policy", "GREEDY", EPISODES, VERBOSE, WANDB, project_name, threshold_high[1], threshold_low[1],pomdp_momdp) # SARSOP or conops or greedy
 
 		else
 			println("No Valid Policy Selected")

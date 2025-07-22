@@ -22,6 +22,7 @@ if PLOT_BN || PLOT_CPDS || DECISION_TREE
 	include("../src/common/plotting_tikz.jl")
 	include("../src/bayes_net.jl")
 	# include("../src/test_bayes_net.jl")
+	# bn = cont_bn
 elseif PARETO_FRONTIER || PARETO_FRONTIER_SINGLE
 	Pkg.activate("wandbPkg")
 	Pkg.instantiate()
