@@ -3,14 +3,14 @@
 # -------------------------------
 # Configuration Flags
 # -------------------------------
-PLOT_CPDS     = true
+PLOT_CPDS     = false#true
 PLOT_BN       = false
 DECISION_TREE = false
 
 ALPHA_VECTORS_HEATMAP = false
 PARETO_FRONTIER_SINGLE = false
-PARETO_FRONTIER = false
-projname = "log_grace"
+PARETO_FRONTIER = true #false
+projname = "baye_lambda" #"log_grace"
 
 # -------------------------------
 # Package Setup
@@ -129,9 +129,16 @@ if PARETO_FRONTIER
 						tf = parse(Int, string(run.summary["tf"]))
 						ft = parse(Int, string(run.summary["ft"]))
 						ff = parse(Int, string(run.summary["ff"]))
-
 						total_t = tt + tf
 						total_f = ft + ff
+
+						if total_t  == 0
+							total_t += 1
+						end
+						
+						if total_f  == 0
+							total_f += 1
+						end
 
 						temp_tt += tt / total_t
 						temp_tf += tf / total_t
