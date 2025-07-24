@@ -200,6 +200,9 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 			if true_state == 2 && a ==7
 				correct["tf"] += 1  # false positive
 			end
+			if true_state == 1 && a ==7
+				correct["ft"] += 1  # false positive
+			end
 		end
 
 		println(correct)
@@ -291,3 +294,36 @@ function decision_tree(pomdp, policy; max_depth=3)
 end
 
 
+function simulate_belief_sarsop(pomdp, policy; max_steps=20, verbose=true)
+    println("---------- SARSOP Belief Update Simulation ----------")
+
+    updater = DiscreteUpdater(pomdp)
+    s = rand(initialstateSample(pomdp, 0))
+    b = initialize_belief(updater, initialstateSample(pomdp, 0))
+
+    for step in 1:max_steps
+		accu, true_state = stateindex_to_state(s, pomdp.life_states)  # Save the current state before transitioning 
+		s_check = s
+		if true_state == 1 #&& step > 1
+			s_check = s_check + 1
+		end
+		belief_life = pdf(b, s_check)  # assuming index 2 corresponds to life = true
+		a = action(policy, b)
+        sp = rand(transition(pomdp, s, a))
+        o = observation_simulate(pomdp, a, sp)
+
+
+        if verbose
+            println("Step $step")
+            println("  Action: $a")
+            println("  Observation: $o")
+            println("  Belief(life): $belief_life")
+            println("  State: $s → $sp")
+        end
+
+        b = update(updater, b, a, o)
+        s = sp
+    end
+
+    println("---------- End of Simulation ----------")
+end

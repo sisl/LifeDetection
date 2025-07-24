@@ -77,31 +77,91 @@ function plot_alpha_action_heatmap(policy, pomdp_momdp,num_samples)
 	], categorical=true)
 
 	# Define tick positions in the *middle* of each discrete color block
-	tick_positions = collect(1:9) .- 0.5
-	tick_labels = string(1:9)
+
 	p = heatmap(
 		1:num_samples, b_vals,dominating',
-		xlabel="Sample Volume",
-		ylabel="Belief in Life (P(life=1))",
+		xlabel="Current Accumulated "* L"s_V",
+		ylabel = "Belief of Sample Biotic State: " * L"b(s_L)",
 		# title="Belief in Life (P(life=1))",
-		colorbar_title=L"\textrm{Actions:  } \{a_1, ... a_9\} ",
+		colorbar_title="Action to Take: " *L"\{a_1, ... a_9\} ",
 		color = discrete_colors,
-    	colorbar_ticks = (tick_positions, tick_labels),
 		clims = (0.5, 9.5),  # Important: avoids color blending
 		fontfamily = "Computer Modern",
-		guidefont = font(16, "Computer Modern"),    # Axis labels font size 20
+		guidefont = font(12, "Computer Modern"),    # Axis labels font size 20
 		tickfont = font(12, "Computer Modern"),     # Tick labels font size 16
 		legendfont = font(16, "Computer Modern"),   # Legend font size 18
 		titlefont = font(20, "Computer Modern"),     # Title font size 24
+		# background_color = :transparent,
+		# foreground_color_subplot = :white,
+		# guidefontcolor = :white,
+		# tickfontcolor = :white,
+		# size=(800, 400),
+    	dpi=1000,
 	)
+
+
 	if !isdir("./figures")
 		mkpath("./figures")
 	end
 	display(p)
-	savefig(p, "./figures/plot_alpha_action_heatmap.png")
+	savefig(p, "./figures/plot_alpha_action_heatmap.pdf")
 	return p
-end
 
+end
+function plot_alpha_vectors_VLD(policy::AlphaVectorPolicy, pomdp, sample::Int)
+    alpha_vectors = policy.alphas
+    action_map = policy.action_map
+
+    num_vectors = size(alpha_vectors, 1)
+    b = range(0.0, 1.0, length=300)  # Belief in life (P(L=1))
+
+    # Get indices in state vector for life and dead at this sample
+    dead_idx = state_to_stateindex(sample, 1)
+    life_idx = state_to_stateindex(sample, 2)
+
+    # Compute value of each alpha vector at each belief
+    V_matrix = zeros(num_vectors, length(b))
+    for i in 1:num_vectors
+        α = alpha_vectors[i]
+        α_dead = α[dead_idx]
+        α_life = α[life_idx]
+        V_matrix[i, :] .= @. α_life * b + α_dead * (1 - b)
+    end
+
+    # Determine which vectors are optimal at *any* belief (up to numerical error)
+    keep = falses(num_vectors)
+    for j in 1:length(b)
+        vj = V_matrix[:, j]
+        max_val = maximum(vj)
+        for i in 1:num_vectors
+            if isapprox(vj[i], max_val; atol=1e-6)
+                keep[i] = true
+            end
+        end
+    end
+
+    println("Kept $(count(keep)) of $num_vectors alpha vectors")
+
+    # Plot only dominant vectors
+    p = Plots.plot(title="Alpha Vectors at Sample Volume = $sample",
+                   xlabel="Belief in Life (P(L=1))", ylabel="Value",
+                   legend=:bottomleft)
+
+    for i in 1:num_vectors
+        if keep[i]
+            α = alpha_vectors[i]
+            α_dead = α[dead_idx]
+            α_life = α[life_idx]
+            V_b = @. α_life * b + α_dead * (1 - b)
+            plot!(b, V_b, label="α_$i (a=$(action_map[i]))")
+			println(V_b)
+		end
+    end
+
+    display(p)
+    savefig(p, "alpha_vectors_sample_$sample.png")
+    return p
+end
 
 
 
