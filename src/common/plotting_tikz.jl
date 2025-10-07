@@ -2,6 +2,7 @@ using TikzGraphs
 using TikzPictures
 using PGFPlotsX
 using Plots
+using Distributions: Categorical
 
 
 
@@ -24,6 +25,7 @@ function make_pgfplot(dist, title)
 	"""
 	k = length(dist.p)
 	labels = k == 2 ? ["false", "true"] : string.(0:(k-1))
+	# 
 	if k > 11 && k < 22
 		labels = [i % 2 == 0 ? labels[i+1] : "" for i ∈ 0:(k-1)]
 	end
@@ -41,6 +43,7 @@ function make_pgfplot(dist, title)
 		{
 			"ybar",
 			"title" = title,
+			"title style" = "{font=\\large}",
 			"xtick" = 1:k,
 			"xticklabels" = labels,
 			"axis x line" = "bottom",

@@ -3,25 +3,26 @@
 # -------------------------------
 # Configuration Flags
 # -------------------------------
-PLOT_CPDS     = false#true
+PLOT_CPDS     = true
 PLOT_BN       = false
 DECISION_TREE = false
 
 ALPHA_VECTORS_HEATMAP = false
 PARETO_FRONTIER_SINGLE = false
-PARETO_FRONTIER = true #false
+PARETO_FRONTIER = false
 projname = "baye_lambda" #"log_grace"
 
 # -------------------------------
 # Package Setup
 # -------------------------------
+
 using Pkg
 if PLOT_BN || PLOT_CPDS || DECISION_TREE
 	Pkg.activate("LifeDetectionPkg")
 	Pkg.instantiate()
 	include("../src/common/plotting_tikz.jl")
 	include("../src/bayes_net.jl")
-	# include("../src/test_bayes_net.jl")
+	# include("test_bayes_net.jl")
 	# bn = cont_bn
 elseif PARETO_FRONTIER || PARETO_FRONTIER_SINGLE
 	Pkg.activate("wandbPkg")
@@ -32,7 +33,9 @@ elseif PARETO_FRONTIER || PARETO_FRONTIER_SINGLE
 	using DelimitedFiles
 	using Statistics
 end
-
+if !isdir("figures")
+	mkpath("figures")
+end
 
 # -------------------------------
 # Get PART_ID and NUM_PARTS
@@ -132,11 +135,11 @@ if PARETO_FRONTIER
 						total_t = tt + tf
 						total_f = ft + ff
 
-						if total_t  == 0
+						if total_t == 0
 							total_t += 1
 						end
-						
-						if total_f  == 0
+
+						if total_f == 0
 							total_f += 1
 						end
 
@@ -279,17 +282,6 @@ if PARETO_FRONTIER_SINGLE
 	println(all_filtered_projects)
 	println(average_tf)
 	println(average_ft)
-	# # Scatter plot 2: average_ft vs average_ff
-	# p2 = scatter(
-	# 	average_ft, average_ff,
-	# 	xlabel = "Average FT",
-	# 	ylabel = "Average FF",
-	# 	title = "Average FT vs Average FF",
-	# 	label = "Projects"
-	# )
-
-	# Combine plots side by side
-	# plot_combined = plot(p1, p2, layout = (1, 2), size = (900, 400))
 	savefig(p1, "./figures/pareto_scatter.png")
 	display(p1)
 
@@ -302,8 +294,6 @@ if PARETO_FRONTIER_SINGLE
 			write(io, "$proj_str,$(average_tt[i]),$(average_tf[i]),$(average_ft[i]),$(average_ff[i]),$(acc_rate[i])\n")
 		end
 	end
-	println("Saved part results to $output_file")
-
 end
 
 if PLOT_BN == true
@@ -328,7 +318,6 @@ if PLOT_CPDS == true
 		PGFPlotsX.pgfsave("figures/prior.png", prior_plot)
 
 		# 2: CPD figure
-
 		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o1]].distributions[1], raw"P($o_1$ | $s_L$=false)"))
 		push!(p, make_pgfplot(bn.cpds[bn.name_to_index[:o1]].distributions[2], raw"P($o_1$ | $s_L$=true)"))
 

@@ -36,9 +36,9 @@ proj_name = config["evaluations"]["proj_name"]
 
 # Parameters to change for additional testing / off nominal testing
 ACC_RATE = config["scenario"]["acc_rate"]               # 270 μL per day
-SAMPLE_MAX_CHAMBER = config["scenario"]["sample_Max_Chamber"]  
-std_ACC_RATE = config["scenario"]["std_acc_rate"]        
-pomdp_momdp = config["scenario"]["pomdp"]        
+SAMPLE_MAX_CHAMBER = config["scenario"]["sample_Max_Chamber"]
+std_ACC_RATE = config["scenario"]["std_acc_rate"]
+pomdp_momdp = config["scenario"]["pomdp"]
 
 
 params = config["parameters"]
@@ -83,7 +83,7 @@ ACTION_CPDS = Dict(
 
 # Including Bayesnet & base files for running POMDP and simulation
 include("../src/bayes_net.jl")
-include("../src/test_bayes_net.jl")
+include("test_bayes_net.jl")
 include("../src/LifeDetectionPOMDP.jl")
 include("../src/LifeDetectionMOMDP.jl")
 include("../src/common/simulate.jl")
@@ -145,25 +145,25 @@ cd(work_dir) do
 				MAX_PENALTY=10000,
 				std_fraction=std_ACC_RATE)
 		end
-			
+
 
 		if POLICY == "CONOPS"
-			for (t_h,t_l) in IterTools.product(threshold_high, threshold_low)
+			for (t_h, t_l) in IterTools.product(threshold_high, threshold_low)
 				println("Running with $t_h,$t_l")
 				project_name = "$(proj_name)_t-high_$(t_h)_t-low_$(t_l)"
-				
+
 				# Running CONOPS:
-				rewards, accuracy = simulate_policyVLD(pomdp, 
-														"policy", 
-														"CONOPS", # SARSOP or conops or greedy
-														EPISODES, 
-														VERBOSE, 
-														WANDB, 
-														project_name, 
-														t_h,
-														t_l,
-														pomdp_momdp) 
-				
+				rewards, accuracy = simulate_policyVLD(pomdp,
+					"policy",
+					"CONOPS", # SARSOP or conops or greedy
+					EPISODES,
+					VERBOSE,
+					WANDB,
+					project_name,
+					t_h,
+					t_l,
+					pomdp_momdp)
+
 			end
 		elseif POLICY == "SARSOP"
 
@@ -209,17 +209,17 @@ cd(work_dir) do
 				# Wandb.wandb.save("policy.out")
 				sleep(1)
 				plot_alpha_dots(policy)
-				plot_alpha_action_heatmap(policy, pomdp_momdp,SAMPLE_MAX_CHAMBER)
+				plot_alpha_action_heatmap(policy, pomdp_momdp, SAMPLE_MAX_CHAMBER)
 				Wandb.wandb.save("figures/plot_alpha_dots.png")
 				Wandb.wandb.save("figures/plot_alpha_action_heatmap.png")
 
 				close(run)
 			end
-			rewards, accuracy = simulate_policyVLD(pomdp, policy, "SARSOP", EPISODES, VERBOSE, WANDB, project_name, threshold_high[1], threshold_low[1],pomdp_momdp) # SARSOP or conops or greedy
+			rewards, accuracy = simulate_policyVLD(pomdp, policy, "SARSOP", EPISODES, VERBOSE, WANDB, project_name, threshold_high[1], threshold_low[1], pomdp_momdp) # SARSOP or conops or greedy
 
 
 		elseif POLICY == "GREEDY"
-			rewards, accuracy = simulate_policyVLD(pomdp, "policy", "GREEDY", EPISODES, VERBOSE, WANDB, project_name, threshold_high[1], threshold_low[1],pomdp_momdp) # SARSOP or conops or greedy
+			rewards, accuracy = simulate_policyVLD(pomdp, "policy", "GREEDY", EPISODES, VERBOSE, WANDB, project_name, threshold_high[1], threshold_low[1], pomdp_momdp) # SARSOP or conops or greedy
 
 		else
 			println("No Valid Policy Selected")
