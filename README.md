@@ -20,8 +20,10 @@ The LifeDetection Suite [1] problem with the [POMDPs.jl](https://github.com/Juli
 
 Use the Julia package manager to install directly from GitHub:
 
+```
 using Pkg
-Pkg.add(url="https://github.com/YourUsername/LifeDetection.jl")
+Pkg.add(url="https://github.com/sisl/LifeDetection.jl", rev="package-refactor")
+```
 
 ## States
 
