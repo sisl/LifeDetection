@@ -1,6 +1,3 @@
-using BayesNets
-
-include("common/bayes_net_helpers.jl")
 
 """
 sL  = life                           (Boolean)

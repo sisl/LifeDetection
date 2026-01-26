@@ -1,6 +1,5 @@
-using ProgressMeter
 
-function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=true, wandb=false, wandb_Name="", threshold_high= 0.999, threshold_low=0.001, pomdp_momdp = true)
+function simulate_policyVLD(pomdp, policy; type="SARSOP", n_episodes=1, verbose=true, threshold_high= 0.999, threshold_low=0.001)
 
 	if verbose
 		println("--------------------------------START EPISODES---------------------------------")
@@ -11,41 +10,11 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 	accuracy = zeros(Float64,n_episodes)
 
 
-	# @showprogress Threads.@threads 
 	for episode in range(1, n_episodes)
 
-		if wandb
-			run = WandbLogger( #Wandb.wandb.init(
-				# Set the wandb entity where your project will be logged (generally your team name).
-				entity="sherpa-rpa",
-				# Set the wandb project where this run will be logged.
-				project=wandb_Name,
-				# Track hyperparameters and run metadata.
-				config=Dict(
-					"bayesnet" => pomdp.bn,
-					"lambda" => pomdp.λ,
-					"tau" => pomdp.τ,
-					"ACTION_CPDS" => pomdp.ACTION_CPDS,
-					"max_obs" => pomdp.max_obs,
-					"inst" => pomdp.inst,
-					"sample_volume" => pomdp.sample_volume,
-					"life_states" => pomdp.life_states,
-					"ACC_RATE" => pomdp.ACC_RATE,
-					"sample_use" => pomdp.sample_use,
-					"gamma" => pomdp.discount,
-				),
-			)
-		end
-
-		if pomdp_momdp
-			updater = DiscreteUpdater(pomdp)
-			b = initialize_belief(updater, initialstateSample(pomdp, 0))
-			s = initialstateSample(pomdp, 0)
-		else
-			updater = MOMDPDiscreteUpdater(pomdp)
-			b = initialstate_y(pomdp,1) #  initialstate(pomdp) #
-			s = (1, rand(initialstate_y(pomdp,1)))
-		end
+		updater = DiscreteUpdater(pomdp)
+		b = initialize_belief(updater, initialstateSample(pomdp, 0))
+		s = initialstateSample(pomdp, 0)
 
 		if verbose
 			println("\nPolicy Simulation: Episode ", episode)
@@ -59,13 +28,8 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 		step = 1
 		true_state = 1 # track s_L (life state)
 		a = 0
-		if pomdp_momdp
-			s = 1
-			sp = 1
-		else
-			s = (1,1)
-			sp = (1,1)
-		end
+		s = 1
+		sp = 1
 		belief_life = pdf(b, 2)
 		action_name = ""
 		action_final = 0
@@ -99,24 +63,16 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 					correct["ff"] += 1  # true negative
 				end
 
-				if pomdp_momdp
 				
-					# Get the current sample volume from state index
-					sample_volume, _ = stateindex_to_state(s, pomdp.life_states)
+				# Get the current sample volume from state index
+				sample_volume, _ = stateindex_to_state(s, pomdp.life_states)
 
-					# Sample new life state while keeping sample_volume fixed
-					s = rand(initialstateSample(pomdp, sample_volume))
+				# Sample new life state while keeping sample_volume fixed
+				s = rand(initialstateSample(pomdp, sample_volume))
 
-					# Reinitialize belief for same sample_volume
-					b = initialize_belief(updater, initialstateSample(pomdp, sample_volume))
-					belief_life = pdf(b, state_to_stateindex(sample_volume, 2))
-
-				else
-					s = (s[1], rand(initialstate_y(pomdp,1)))
-					b = initialstate_y(pomdp)
-					belief_life = pdf(b, 2)
-
-				end
+				# Reinitialize belief for same sample_volume
+				b = initialize_belief(updater, initialstateSample(pomdp, sample_volume))
+				belief_life = pdf(b, state_to_stateindex(sample_volume, 2))
 
                 if verbose
                     println("[Resetting] Reached terminal state. Sampling new initial state.")
@@ -125,11 +81,7 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 
 			# get action, next state, and observation
 			if type == "SARSOP"
-				if pomdp_momdp
-					a = action(policy, b)
-				else
-					a = action(policy, b, s[1])
-				end
+				a = action(policy, b)
 			elseif type == "greedy"
 				a = action_greedy_policy(policy, b, step)
 			elseif type == "CONOPS"
@@ -145,52 +97,35 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 
 			# format action and observation names
 			action_name = a >= pomdp.inst+1 ? (a == pomdp.inst+1 ? "Declare Dead" : "Declare Life") : (a == pomdp.inst ? "Accumulate" : "Sensor $(a)")
-			if pomdp_momdp
-				accu, true_state = stateindex_to_state(s, pomdp.life_states)  # Save the current state before transitioning 
-				accu_2, true_state2 = stateindex_to_state(sp, pomdp.life_states)  # Save the current state before transitioning 
-				s_check = s
-				if true_state == 1 #&& step > 1
-					s_check = s_check + 1
-				end
-				belief_life = pdf(b, s_check)
-			else
-				accu = s[1]
-				accu_2 = sp[1]
-				true_state = s[2]
-				true_state2 = sp[2]
-				belief_life = pdf(b, 2)
+
+			accu, true_state = stateindex_to_state(s, pomdp.life_states)  # Save the current state before transitioning 
+			accu_2, true_state2 = stateindex_to_state(sp, pomdp.life_states)  # Save the current state before transitioning 
+			s_check = s
+			if true_state == 1 #&& step > 1
+				s_check = s_check + 1
 			end
+			belief_life = pdf(b, s_check)
+			
 			if verbose
 				@printf("%3d  | %-12s | %.3f        | %d          |  %d         | %.2f         \n",
 					step, action_name, belief_life, true_state, accu, total_reward)
 				println(accu_2)
 			end
-			if wandb
+			
+			Dict(
+				"step" => step,
+				"action" => a,
+				"beliefLife" => belief_life,
+				"trueState" => true_state,
+				"accu" => acc,
+				"totalReward" => total_reward,
+				"observation" => o,
+				"state" => s,
+				"nextState" => sp,
+				"belief" => b,
+			)
 
-				###################################
-				Wandb.log(
-					run,
-					Dict(
-						"step" => step,
-						"action" => a,
-						"beliefLife" => belief_life,
-						"trueState" => true_state,
-						"accu" => acc,
-						"totalReward" => total_reward,
-						"observation" => o,
-						"state" => s,
-						"nextState" => sp,
-						"belief" => b,
-					),
-				)
-
-			end
-
-			if pomdp_momdp
-				b = update(updater, b, a, o)
-			else
-				b = update(updater, b, a, o, s[1], sp[1])
-			end
+			b = update(updater, b, a, o)
 
 			# end
 			s = sp
@@ -218,23 +153,6 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 		total_episode_rewards[episode] = total_reward
 		accuracy[episode] = acc
 
-		if wandb
-			Wandb.wandb.summary["tt"] = correct["tt"]
-			Wandb.wandb.summary["ft"] = correct["ft"]
-			Wandb.wandb.summary["tf"] = correct["tf"]
-			Wandb.wandb.summary["ff"] = correct["ff"]
-			Wandb.wandb.summary["total_reward_final"] = total_reward
-			# Wandb.wandb.summary["action_final"] = a
-			# Wandb.wandb.summary["action_final_name"] = action_name
-			# Wandb.wandb.summary["belief_final"] = belief_life
-			# Wandb.wandb.summary["s_final"] = true_state
-			# Wandb.wandb.summary["sp_final"] = sp
-			# Wandb.wandb.summary["false_positive_rate"] = (action_final == 1 ? 1 : 0)
-			# Wandb.wandb.summary["false_negative_rate"] = (action_final == 2 ? 1 : 0)
-			close(run)
-			sleep(0.3)
-		end
-
 	end
 
 	if verbose
@@ -247,83 +165,42 @@ function simulate_policyVLD(pomdp, policy, type="SARSOP", n_episodes=1, verbose=
 	return mean(total_episode_rewards), mean(accuracy)
 end
 
-function decision_tree(pomdp, policy; max_depth=3)
-	node_labels = String[]
-	edge_labels = String[]
-	edges = Tuple{Int, Int}[]
 
-	updater = DiscreteUpdater(pomdp)
-	b0 = initialize_belief(updater, initialstate(pomdp))
-
-	function traverse(b, parent_index::Union{Int, Nothing}=nothing, edge_label::Union{String, Nothing}=nothing, depth=1)
-		# Determine action from the policy
-		a = action(policy, b)
-		b_val = pdf(b, 1)
-		#println("tree action: ", a)
-		#println("tree belief: ", b_val)
-		action_name = pomdp.inst < a ? (a == 8 ? "Declare Dead" : "Declare Life") : (pomdp.inst == a ? "Accumulate" : "Sensor $(a - 2)")
-		label = "Action: $(action_name)\nBelief: $(b_val)"
-		push!(node_labels, label)
-		current_index = length(node_labels)
-
-		# Record the edge if a parent exists.
-		if parent_index !== nothing && edge_label !== nothing
-			push!(edge_labels, edge_label)
-			push!(edges, (parent_index, current_index))
-		end
-
-		# Stop if we've reached max depth or if the action is terminal.
-		if depth >= max_depth || a ≤ 2
-			return
-		end
-
-		# Branch for each observation
-		for o in POMDPs.observations(pomdp)
-			obs_name = "$(o)" # = o == 1 ? "N" : "Y"
-			println(o)
-			b_new = update(updater, b, a, o)
-			traverse(b_new, current_index, obs_name, depth+1)
-		end
-	end
-
-	traverse(b0)
-	#println("Node Labels: ", node_labels)
-	#println("Edge Labels: ", edge_labels)
-	#println("Edges: ", edges)
-	return (node_labels, edge_labels, edges)
+function action_greedy_policy(policy, b, step)
+    # Only two steps in greedy policy
+    # 1. we use the sensor once, (or whatever the initial policy chooses)
+    # 2. if the simulation isn't terminated, we declare whether or not it's alive or dead.
+    
+    if step == 1
+        return action(policy, b)
+    else
+        return pdf(b, 2) ≤ 0.5 ? 1 : 2
+    end
 end
 
+function conops_orbiter(pomdp, s, mode_acc, prev_action, belief_life, threshold_high, threshold_low)
+    # Constants
+    declare_dead_action = pomdp.inst + 1  # 8
+    declare_life_action = pomdp.inst + 2  # 9
+    accumulate_action = pomdp.inst        # 7
 
-function simulate_belief_sarsop(pomdp, policy; max_steps=20, verbose=true)
-    println("---------- SARSOP Belief Update Simulation ----------")
+    # Get current sample volume
+    sample_volume, life_state = stateindex_to_state(s, pomdp.life_states)
 
-    updater = DiscreteUpdater(pomdp)
-    s = rand(initialstateSample(pomdp, 0))
-    b = initialize_belief(updater, initialstateSample(pomdp, 0))
-
-    for step in 1:max_steps
-		accu, true_state = stateindex_to_state(s, pomdp.life_states)  # Save the current state before transitioning 
-		s_check = s
-		if true_state == 1 #&& step > 1
-			s_check = s_check + 1
-		end
-		belief_life = pdf(b, s_check)  # assuming index 2 corresponds to life = true
-		a = action(policy, b)
-        sp = rand(transition(pomdp, s, a))
-        o = observation_simulate(pomdp, a, sp)
-
-
-        if verbose
-            println("Step $step")
-            println("  Action: $a")
-            println("  Observation: $o")
-            println("  Belief(life): $belief_life")
-            println("  State: $s → $sp")
-        end
-
-        b = update(updater, b, a, o)
-        s = sp
+    # Declare if confident enough
+    if belief_life >= threshold_high
+        return (declare_life_action, true, 0)
+    elseif belief_life <= threshold_low
+        return (declare_dead_action, true, 0)
     end
 
-    println("---------- End of Simulation ----------")
+	if mode_acc
+        return sum(pomdp.sample_use[1:5]) > sample_volume ? (7, true, 0) : (1, false, 1)
+    end
+
+    if prev_action < 5 && pomdp.sample_use[prev_action+1] < sample_volume
+        return (prev_action + 1, false, prev_action + 1)
+    end
+
+    return (7, true, 0)
 end

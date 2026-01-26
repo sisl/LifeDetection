@@ -2,8 +2,6 @@
 Second Bayesian network for evaluating SARSOP policy performance.
 """
 
-using BayesNets
-include("../src/common/bayes_net_helpers.jl")
 
 """
 sL  = life                           (Boolean)
