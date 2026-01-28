@@ -1,0 +1,4 @@
+[deps]
+LifeDetection = "e3cbed89-acc6-4a5d-831c-4bfc78f25bcb"
+POMDPs = "a93abf59-7444-517b-a68a-c42f96afdd7d"
+SARSOP = "cef570c6-3a94-5604-96b7-1a5e143043f2"

@@ -1,0 +1,19 @@
+name = "LifeDetection"
+uuid = "e3cbed89-acc6-4a5d-831c-4bfc78f25bcb"
+version = "0.1.0"
+
+[deps]
+BayesNets = "ba4760a4-c768-5bed-964b-cf806dc591cb"
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+POMDPTools = "7588e00f-9cae-40de-98dc-e0c70c48cdd7"
+POMDPs = "a93abf59-7444-517b-a68a-c42f96afdd7d"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[compat]
+BayesNets = "3.5.2"
+LaTeXStrings = "1.4.0"
+POMDPTools = "1.1.0"
+POMDPs = "1.0.0"
+Plots = "1.41.4"
+Printf = "1.11.0"
